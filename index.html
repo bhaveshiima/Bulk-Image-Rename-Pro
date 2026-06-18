@@ -1,0 +1,1345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bulk Image Rename Pro</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --primary: #2563eb;
+            --primary-glow: rgba(37, 99, 235, 0.2);
+            --card-bg: rgba(255, 255, 255, 0.85);
+            --border: #cbd5e1;
+            --glass-border: rgba(37, 99, 235, 0.1);
+            --input-bg: #ffffff;
+            --danger: #ef4444;
+            --danger-glow: rgba(239, 68, 68, 0.12);
+            --font: 'Inter', sans-serif;
+            --mono: 'JetBrains Mono', monospace;
+            --speed: 0.3s;
+        }
+
+        body.dark-mode {
+            --bg-color: #0f172a;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --primary: #38bdf8;
+            --primary-glow: rgba(56, 189, 248, 0.3);
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --border: #334155;
+            --glass-border: rgba(56, 189, 248, 0.2);
+            --input-bg: #1e293b;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: var(--font);
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            overflow-x: hidden;
+            transition: background-color var(--speed), color var(--speed);
+        }
+
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px 60px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ---- Header ---- */
+        header {
+            text-align: center;
+            margin-bottom: 52px;
+            position: relative;
+            padding-top: 8px;
+        }
+
+        .brand-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--primary-glow);
+            color: var(--primary);
+            border: 1px solid rgba(37,99,235,0.25);
+            border-radius: 20px;
+            padding: 4px 14px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 14px;
+        }
+
+        body.dark-mode .brand-badge {
+            background: rgba(56,189,248,0.1);
+            border-color: rgba(56,189,248,0.25);
+        }
+
+        .brand h1 {
+            font-size: clamp(2.2rem, 5vw, 3.4rem);
+            margin: 0;
+            font-weight: 800;
+            letter-spacing: -1.5px;
+            background: linear-gradient(135deg, var(--primary) 0%, #7c3aed 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.1;
+        }
+
+        body.dark-mode .brand h1 {
+            background: linear-gradient(135deg, #38bdf8 0%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+        }
+
+        .pro-tag {
+            font-weight: 300;
+            letter-spacing: 0;
+        }
+
+        .brand-sub {
+            color: var(--text-muted);
+            font-size: 0.88rem;
+            margin: 10px 0 0;
+            letter-spacing: 0.1px;
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 9px 16px;
+            cursor: pointer;
+            border-radius: 50px;
+            font-family: var(--mono);
+            font-size: 0.82rem;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            transition: all 0.2s;
+            white-space: nowrap;
+            backdrop-filter: blur(8px);
+        }
+
+        .theme-toggle:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            box-shadow: 0 0 16px var(--primary-glow);
+        }
+
+
+        /* ---- Glass Panel ---- */
+        .glass-panel {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.07), inset 0 1px 0 rgba(255,255,255,0.6);
+        }
+
+        body.dark-mode .glass-panel {
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04);
+        }
+
+        /* ---- Layout ---- */
+        .app-interface {
+            display: grid;
+            grid-template-columns: 290px 1fr;
+            gap: 24px;
+            margin-bottom: 40px;
+            align-items: start;
+        }
+
+        @media (max-width: 860px) {
+            .app-interface { grid-template-columns: 1fr; }
+            .theme-toggle { position: static; margin: 0 auto 24px; }
+            header { padding-top: 0; }
+        }
+
+        /* ---- Sidebar ---- */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            position: sticky;
+            top: 20px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+        }
+
+        .sidebar h2 {
+            font-size: 1rem;
+            margin: 0 0 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-main);
+        }
+
+        /* ---- Drop Zone ---- */
+        .drop-zone {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 28px 16px;
+            text-align: center;
+            cursor: pointer;
+            background: var(--input-bg);
+            transition: all 0.25s;
+        }
+
+        .drop-zone.drag-over,
+        .drop-zone:hover {
+            border-color: var(--primary);
+            background: rgba(37,99,235,0.04);
+        }
+
+        .drop-zone i { font-size: 2rem; color: var(--primary); }
+        .drop-zone p { margin: 8px 0 0; font-size: 0.88rem; }
+
+        /* ---- Buttons ---- */
+        .btn-group { display: flex; flex-direction: column; gap: 10px; }
+
+        button {
+            padding: 11px 14px;
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+            color: var(--text-main);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.88rem;
+            font-family: var(--font);
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        button:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px var(--primary-glow);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, #4f46e5 100%);
+            color: #fff;
+            border-color: transparent;
+            box-shadow: 0 4px 14px var(--primary-glow);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, var(--primary) 0%, #4f46e5 100%);
+            color: #fff;
+            opacity: 0.88;
+            box-shadow: 0 6px 20px var(--primary-glow);
+        }
+
+        body.dark-mode .btn-primary {
+            background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
+            color: #0f172a;
+        }
+
+        body.dark-mode .btn-primary:hover { color: #0f172a; }
+
+        .btn-icon {
+            padding: 10px 13px;
+            flex-shrink: 0;
+        }
+
+        /* ---- Toolbar ---- */
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .stats-badge {
+            background: var(--input-bg);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.83rem;
+            color: var(--primary);
+            font-family: var(--mono);
+            border: 1px solid var(--border);
+            transition: all 0.2s;
+        }
+
+        .stats-badge.has-error {
+            color: var(--danger);
+            border-color: rgba(239,68,68,0.4);
+            background: var(--danger-glow);
+        }
+
+        .toolbar-actions { display: flex; gap: 8px; align-items: center; }
+
+        /* ---- Preview Grid ---- */
+        .preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 14px;
+        }
+
+        /* ---- File Cards ---- */
+        .file-card {
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            position: relative;
+        }
+
+        .file-card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            transform: translateY(-3px);
+        }
+
+        .card-thumb {
+            height: 130px;
+            width: 100%;
+            object-fit: cover;
+            display: block;
+            background: var(--border);
+        }
+
+        /* Delete button — visible on card hover */
+        .del-btn {
+            position: absolute;
+            top: 7px;
+            right: 7px;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: rgba(239,68,68,0.92);
+            backdrop-filter: blur(4px);
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.72rem;
+            padding: 0;
+            opacity: 0;
+            transition: opacity 0.15s;
+            z-index: 2;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+        }
+
+        .file-card:hover .del-btn { opacity: 1; }
+        .del-btn:hover {
+            background: #dc2626 !important;
+            transform: none !important;
+            box-shadow: none !important;
+            border-color: transparent !important;
+        }
+
+        /* Card body: input + extension badge */
+        .card-body {
+            padding: 9px 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .name-input {
+            flex: 1;
+            min-width: 0;
+            padding: 6px 9px;
+            background: var(--bg-color);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            border-radius: 6px;
+            font-family: var(--mono);
+            font-size: 0.8rem;
+            transition: border 0.2s, box-shadow 0.2s;
+        }
+
+        .name-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+        }
+
+        .name-input.is-duplicate {
+            border-color: var(--danger);
+            background: var(--danger-glow);
+            color: var(--danger);
+        }
+
+        .ext-badge {
+            font-family: var(--mono);
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            background: var(--bg-color);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 3px 6px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        /* ---- Empty State ---- */
+        .empty-state {
+            grid-column: 1 / -1;
+            height: 300px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+        }
+
+        .empty-state i { font-size: 2.8rem; margin-bottom: 14px; opacity: 0.35; }
+
+        /* ---- Manual ---- */
+        .manual-section { margin-top: 0; }
+
+        .manual-section h2 {
+            font-size: 1.4rem;
+            margin: 0 0 28px;
+            padding-bottom: 14px;
+            border-bottom: 2px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Step tracker bar */
+        .steps-tracker {
+            display: flex;
+            align-items: center;
+            margin-bottom: 32px;
+            user-select: none;
+        }
+
+        .step-dot {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .step-circle {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            border: 2px solid var(--border);
+            background: var(--input-bg);
+            color: var(--text-muted);
+            font-weight: 700;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.35s;
+        }
+
+        .step-dot.active .step-circle {
+            background: linear-gradient(135deg, var(--primary), #7c3aed);
+            border-color: transparent;
+            color: #fff;
+            box-shadow: 0 0 0 5px var(--primary-glow);
+            transform: scale(1.12);
+        }
+
+        .step-dot.done .step-circle {
+            background: #22c55e;
+            border-color: transparent;
+            color: #fff;
+        }
+
+        .step-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            transition: color 0.3s;
+            white-space: nowrap;
+        }
+
+        .step-dot.active .step-label { color: var(--primary); }
+        .step-dot.done  .step-label { color: #22c55e; }
+
+        .step-connector {
+            flex: 1;
+            height: 3px;
+            background: var(--border);
+            border-radius: 2px;
+            margin: 0 4px;
+            margin-bottom: 22px;
+            overflow: hidden;
+        }
+
+        .step-connector-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), #7c3aed);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        /* Step content panels */
+        .step-panel {
+            display: none;
+        }
+
+        .step-panel.active {
+            display: grid;
+            grid-template-columns: 130px 1fr;
+            gap: 28px;
+            align-items: start;
+            animation: panelIn 0.4s ease;
+        }
+
+        @keyframes panelIn {
+            from { opacity: 0; transform: translateY(14px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .step-icon-box {
+            width: 130px;
+            height: 130px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, var(--primary-glow), rgba(124,58,237,0.08));
+            border: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: var(--primary);
+            flex-shrink: 0;
+        }
+
+        .step-icon-box i { animation: iconFloat 3s ease-in-out infinite; }
+
+        @keyframes iconFloat {
+            0%, 100% { transform: translateY(0);   }
+            50%       { transform: translateY(-6px); }
+        }
+
+        .step-info h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin: 0 0 10px;
+            color: var(--text-main);
+        }
+
+        .step-info p {
+            color: var(--text-muted);
+            line-height: 1.75;
+            font-size: 0.9rem;
+            margin: 0 0 16px;
+        }
+
+        .step-tip {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            background: rgba(37,99,235,0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            padding: 12px 14px;
+            font-size: 0.84rem;
+            color: var(--text-muted);
+            line-height: 1.55;
+        }
+
+        .step-tip i { color: #f59e0b; margin-top: 1px; flex-shrink: 0; }
+
+        /* Nav bar */
+        .step-nav {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            margin-top: 28px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        .nav-dots {
+            display: flex;
+            gap: 7px;
+            align-items: center;
+        }
+
+        .nav-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--border);
+            cursor: pointer;
+            transition: all 0.25s;
+            border: none;
+            padding: 0;
+        }
+
+        .nav-dot.active {
+            background: var(--primary);
+            width: 22px;
+            border-radius: 4px;
+        }
+
+        .nav-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 1px solid var(--border);
+            background: var(--input-bg);
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+            padding: 0;
+        }
+
+        .nav-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            transform: none;
+            box-shadow: none;
+        }
+
+        .nav-btn:disabled {
+            opacity: 0.3;
+            cursor: default;
+        }
+
+        .nav-btn:disabled:hover {
+            border-color: var(--border);
+            color: var(--text-muted);
+        }
+
+        .note-box {
+            margin-top: 24px;
+            padding: 14px 18px;
+            background: rgba(37,99,235,0.05);
+            border-left: 4px solid var(--primary);
+            border-radius: 4px;
+            font-size: 0.88rem;
+            line-height: 1.55;
+        }
+
+        @media (max-width: 600px) {
+            .step-panel.active { grid-template-columns: 1fr; }
+            .step-icon-box { width: 80px; height: 80px; font-size: 2rem; margin: 0 auto; }
+            .step-label { display: none; }
+            .step-circle { width: 34px; height: 34px; font-size: 0.82rem; }
+        }
+
+        /* ---- Toast ---- */
+        #toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .toast {
+            background: var(--text-main);
+            color: var(--bg-color);
+            padding: 11px 16px;
+            border-radius: 8px;
+            font-family: var(--mono);
+            font-size: 0.84rem;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+            animation: slideIn 0.25s ease;
+            display: flex;
+            align-items: center;
+            gap: 9px;
+        }
+
+        .toast.toast-error { background: var(--danger); color: #fff; }
+
+        @keyframes slideIn {
+            from { transform: translateX(110%); opacity: 0; }
+            to   { transform: translateX(0);    opacity: 1; }
+        }
+
+        /* ---- Loading ---- */
+        .loading-overlay {
+            position: fixed; inset: 0;
+            background: rgba(255,255,255,0.85);
+            z-index: 3000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        body.dark-mode .loading-overlay { background: rgba(0,0,0,0.82); }
+        .loading-overlay.active { visibility: visible; opacity: 1; }
+
+        .spinner {
+            width: 40px; height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.75s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .loading-text {
+            margin-top: 14px;
+            color: var(--primary);
+            font-family: var(--mono);
+            font-weight: 600;
+            font-size: 0.88rem;
+        }
+
+        input[type="file"] { display: none; }
+
+        footer {
+            margin-top: 48px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.82rem;
+            line-height: 1.8;
+            padding: 28px 20px;
+            border-top: 1px solid var(--border);
+            position: relative;
+        }
+
+        .footer-line {
+            width: 40px;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary), #7c3aed);
+            border-radius: 2px;
+            margin: 0 auto 16px;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- Header -->
+    <header>
+        <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()">
+            <i id="themeIcon" class="fa-solid fa-moon"></i>
+            <span id="themeLabel">Dark Mode</span>
+        </button>
+        <div class="brand">
+            <div class="brand-badge"><i class="fa-solid fa-images"></i> Image Utility Tool</div>
+            <h1>Bulk Image Rename<span class="pro-tag"> Pro</span></h1>
+            <p class="brand-sub">Rename hundreds of images in seconds &mdash; entirely in your browser</p>
+        </div>
+    </header>
+
+    <div class="app-interface">
+
+        <!-- Sidebar -->
+        <aside class="sidebar glass-panel">
+            <h2><i class="fa-solid fa-sliders"></i> Controls</h2>
+
+            <!-- Drop Zone -->
+            <div class="drop-zone" id="dropZone">
+                <i class="fa-regular fa-images"></i>
+                <p style="font-weight:600;margin-top:10px;">Click or Drag &amp; Drop</p>
+                <p style="color:var(--text-muted);">JPG, PNG, WEBP, GIF&hellip;</p>
+                <input type="file" id="fileInput" multiple accept="image/*">
+            </div>
+
+            <!-- Export / Import -->
+            <div class="btn-group">
+                <button class="btn-primary" onclick="exportToExcel()">
+                    <i class="fa-solid fa-file-excel"></i> Export List
+                </button>
+                <button onclick="document.getElementById('excelImport').click()">
+                    <i class="fa-solid fa-file-import"></i> Import List
+                </button>
+                <input type="file" id="excelImport" accept=".xlsx,.xls" onchange="importFromExcel(this)">
+            </div>
+        </aside>
+
+        <!-- Main Preview -->
+        <main class="glass-panel" style="min-height:520px;">
+            <div class="toolbar">
+                <div id="fileStats" class="stats-badge">0 files loaded</div>
+                <div class="toolbar-actions">
+                    <button onclick="clearAll()" style="padding:8px 13px;font-size:0.83rem;color:var(--danger);border-color:transparent;">
+                        <i class="fa-solid fa-trash-can"></i> Clear All
+                    </button>
+                    <button class="btn-primary" id="downloadBtn" onclick="downloadZip()" disabled
+                            style="padding:8px 13px;font-size:0.83rem;">
+                        <i class="fa-solid fa-download"></i> Download ZIP
+                    </button>
+                </div>
+            </div>
+            <div id="previewContainer" class="preview-grid"></div>
+        </main>
+
+    </div>
+
+    <!-- Step by step manual -->
+    <section class="manual-section glass-panel">
+        <h2><i class="fa-solid fa-book-open"></i> Step by Step Manual</h2>
+
+        <!-- Step Progress Tracker -->
+        <div class="steps-tracker">
+            <div class="step-dot active" onclick="goToStep(0)">
+                <div class="step-circle">1</div>
+                <span class="step-label">Upload</span>
+            </div>
+            <div class="step-connector"><div class="step-connector-fill" id="fill-0"></div></div>
+            <div class="step-dot" onclick="goToStep(1)">
+                <div class="step-circle">2</div>
+                <span class="step-label">Export</span>
+            </div>
+            <div class="step-connector"><div class="step-connector-fill" id="fill-1"></div></div>
+            <div class="step-dot" onclick="goToStep(2)">
+                <div class="step-circle">3</div>
+                <span class="step-label">Import</span>
+            </div>
+            <div class="step-connector"><div class="step-connector-fill" id="fill-2"></div></div>
+            <div class="step-dot" onclick="goToStep(3)">
+                <div class="step-circle">4</div>
+                <span class="step-label">Download</span>
+            </div>
+        </div>
+
+        <!-- Step 1 -->
+        <div class="step-panel active" id="panel-0">
+            <div class="step-icon-box">
+                <i class="fa-regular fa-images"></i>
+            </div>
+            <div class="step-info">
+                <h3>Step 1 &mdash; Upload Your Images</h3>
+                <p>Drag and drop image files directly onto the upload zone on the left sidebar, or click the zone to open your file picker. You can select as many files as you need in one go &mdash; they will appear instantly as thumbnail cards, sorted alphabetically.</p>
+                <div class="step-tip">
+                    <i class="fa-solid fa-lightbulb"></i>
+                    <span>Supports JPG, PNG, WEBP, GIF and all common image formats. Everything runs entirely in your browser &mdash; no files are ever sent to a server.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="step-panel" id="panel-1">
+            <div class="step-icon-box">
+                <i class="fa-solid fa-file-excel"></i>
+            </div>
+            <div class="step-info">
+                <h3>Step 2 &mdash; Export List</h3>
+                <p>Click the <strong>Export List</strong> button in the left sidebar. It will download an Excel file (<code>ImageList.xlsx</code>) with two columns &mdash; <code>Original_Filename</code> which already contains all your image filenames, and <code>New_Filename</code> which is left blank for you to fill in. Open the file in Excel and type the desired new name for each image in the <code>New_Filename</code> column, then save the file.</p>
+                <div class="step-tip">
+                    <i class="fa-solid fa-lightbulb"></i>
+                    <span>Do not change the <code>Original_Filename</code> column &mdash; it is used to match each row back to the correct image when you import.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="step-panel" id="panel-2">
+            <div class="step-icon-box">
+                <i class="fa-solid fa-file-import"></i>
+            </div>
+            <div class="step-info">
+                <h3>Step 3 &mdash; Import List</h3>
+                <p>After filling in the <code>New_Filename</code> column in Excel and saving the file, come back here and click the <strong>Import List</strong> button. Select the saved Excel file &mdash; the tool will instantly read the new names and apply them to the matching images on screen. You will see all the thumbnails update with their new names right away.</p>
+                <div class="step-tip">
+                    <i class="fa-solid fa-lightbulb"></i>
+                    <span>Names are matched by <code>Original_Filename</code>, so even if you reorder or sort rows in Excel, the correct name will always go to the correct image.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="step-panel" id="panel-3">
+            <div class="step-icon-box">
+                <i class="fa-solid fa-file-zipper"></i>
+            </div>
+            <div class="step-info">
+                <h3>Step 4 &mdash; Download ZIP</h3>
+                <p>After importing, click the <strong>Download ZIP</strong> button in the top-right of the preview panel. All your images will be packaged into a single file called <code>Renamed_Images.zip</code> and downloaded to your device. Extract the ZIP and all photos will have their new names. Enjoy! 🎉</p>
+                <div class="step-tip">
+                    <i class="fa-solid fa-lightbulb"></i>
+                    <span>The original file format is always preserved &mdash; a <code>.jpg</code> stays a <code>.jpg</code> regardless of the new name you give it.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="step-nav">
+            <button class="nav-btn" id="prevBtn" onclick="prevStep()" disabled>
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <div class="nav-dots">
+                <button class="nav-dot active" onclick="goToStep(0)"></button>
+                <button class="nav-dot"        onclick="goToStep(1)"></button>
+                <button class="nav-dot"        onclick="goToStep(2)"></button>
+                <button class="nav-dot"        onclick="goToStep(3)"></button>
+            </div>
+            <button class="nav-btn" id="nextBtn" onclick="nextStep()">
+                <i class="fa-solid fa-chevron-right"></i>
+            </button>
+        </div>
+
+        <div class="note-box" style="margin-top:24px;">
+            <strong><i class="fa-solid fa-circle-info"></i> Note:</strong>
+            Original file extensions are strictly preserved regardless of the name you type.
+            The Download ZIP button is disabled until all images have unique filenames.
+        </div>
+    </section>
+
+    <footer>
+        <div class="footer-line"></div>
+        <p><strong>An Initiative by Vikram Sarabhai Library, IIM Ahmedabad</strong></p>
+        <p>Designed and developed by <strong>Sunit</strong>, Library Trainee (Batch : 2025-26)</p>
+        <p>Mentored by <strong>Bhavesh Patel</strong>, Sr Library Professional&nbsp;&ndash;&nbsp;IT Applications.</p>
+    </footer>
+
+</div>
+
+<div id="toast-container"></div>
+<div class="loading-overlay" id="loadingOverlay">
+    <div style="text-align:center">
+        <div class="spinner"></div>
+        <p class="loading-text" id="loadingText">Processing...</p>
+    </div>
+</div>
+
+<script>
+/* =============================================================
+ * 1. STATE
+ * =========================================================== */
+let filesData = [];
+let idCounter = 0;
+
+const dropZone       = document.getElementById('dropZone');
+const fileInput      = document.getElementById('fileInput');
+const previewEl      = document.getElementById('previewContainer');
+const downloadBtn    = document.getElementById('downloadBtn');
+const fileStats      = document.getElementById('fileStats');
+const loadingOverlay = document.getElementById('loadingOverlay');
+const loadingText    = document.getElementById('loadingText');
+
+/* =============================================================
+ * 2. FILE HANDLING
+ * =========================================================== */
+dropZone.addEventListener('click', () => fileInput.click());
+
+dropZone.addEventListener('dragover', e => {
+    e.preventDefault();
+    dropZone.classList.add('drag-over');
+});
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    handleFiles(e.dataTransfer.files);
+});
+fileInput.addEventListener('change', e => {
+    handleFiles(e.target.files);
+    fileInput.value = '';
+});
+
+function getExtension(filename) {
+    const i = filename.lastIndexOf('.');
+    return i > 0 ? filename.slice(i) : '';
+}
+
+function getFullName(item) {
+    return item.baseName + item.extension;
+}
+
+function handleFiles(fileList) {
+    if (!fileList.length) return;
+    const imgs = Array.from(fileList).filter(f => f.type.startsWith('image/'));
+    if (!imgs.length) return showToast('No image files found in selection.', 'error');
+
+    imgs.forEach(file => {
+        const ext = getExtension(file.name);
+        filesData.push({
+            id:        ++idCounter,
+            file,
+            oldName:   file.name,
+            baseName:  ext ? file.name.slice(0, -ext.length) : file.name,
+            extension: ext,
+            url:       URL.createObjectURL(file)
+        });
+    });
+
+    filesData.sort((a, b) => a.oldName.localeCompare(b.oldName, undefined, {numeric: true}));
+    renderGrid();
+    showToast(`Added ${imgs.length} image${imgs.length !== 1 ? 's' : ''}`, 'success');
+}
+
+function removeFile(id) {
+    const idx = filesData.findIndex(f => f.id === id);
+    if (idx === -1) return;
+    URL.revokeObjectURL(filesData[idx].url);   // prevent memory leak
+    filesData.splice(idx, 1);
+    renderGrid();
+}
+
+function clearAll() {
+    if (!filesData.length) return;
+    if (!confirm('Clear all loaded files?')) return;
+    filesData.forEach(f => URL.revokeObjectURL(f.url));
+    filesData = [];
+    renderGrid();
+}
+
+/* =============================================================
+ * 3. RENDER  (uses DOM methods — no innerHTML for card content)
+ * =========================================================== */
+function renderGrid() {
+    previewEl.innerHTML = '';
+
+    if (!filesData.length) {
+        const empty = document.createElement('div');
+        empty.className = 'empty-state';
+        const icon = document.createElement('i');
+        icon.className = 'fa-regular fa-folder-open';
+        const msg = document.createElement('p');
+        msg.textContent = 'No files selected';
+        empty.appendChild(icon);
+        empty.appendChild(msg);
+        previewEl.appendChild(empty);
+        downloadBtn.disabled = true;
+        fileStats.textContent = '0 files loaded';
+        fileStats.classList.remove('has-error');
+        return;
+    }
+
+    const dups = getDuplicates();
+    updateStatsBadge(dups);
+
+    filesData.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'file-card';
+
+        // Thumbnail
+        const img = document.createElement('img');
+        img.className = 'card-thumb';
+        img.src       = item.url;
+        img.alt       = item.oldName;
+        img.loading   = 'lazy';
+
+        // Delete button
+        const del = document.createElement('button');
+        del.className = 'del-btn';
+        del.title     = 'Remove this file';
+        del.setAttribute('aria-label', 'Remove file');
+        const xIcon = document.createElement('i');
+        xIcon.className = 'fa-solid fa-xmark';
+        del.appendChild(xIcon);
+        del.addEventListener('click', e => { e.stopPropagation(); removeFile(item.id); });
+
+        // Card body
+        const body  = document.createElement('div');
+        body.className = 'card-body';
+
+        const input = document.createElement('input');
+        input.type      = 'text';
+        input.className = 'name-input' + (dups.has(getFullName(item).toLowerCase()) ? ' is-duplicate' : '');
+        input.value     = item.baseName;
+        input.title     = 'Edit filename — extension is locked and preserved automatically';
+        input.setAttribute('aria-label', 'Filename for ' + item.oldName);
+
+        input.addEventListener('input', () => {
+            const trimmed = input.value.trim();
+            if (trimmed) item.baseName = trimmed;
+            updateStats();
+        });
+        input.addEventListener('blur', () => {
+            if (!input.value.trim()) {
+                input.value = item.baseName;
+                showToast('Name cannot be empty', 'error');
+            }
+        });
+
+        const extBadge = document.createElement('span');
+        extBadge.className   = 'ext-badge';
+        extBadge.textContent = item.extension || '—';
+        extBadge.title       = 'Original extension (locked)';
+
+        body.appendChild(input);
+        body.appendChild(extBadge);
+
+        card.appendChild(img);
+        card.appendChild(del);
+        card.appendChild(body);
+        previewEl.appendChild(card);
+    });
+}
+
+function getDuplicates() {
+    const seen = new Set(), dups = new Set();
+    filesData.map(f => getFullName(f).toLowerCase()).forEach(n => {
+        seen.has(n) ? dups.add(n) : seen.add(n);
+    });
+    return dups;
+}
+
+function updateStatsBadge(dups) {
+    const dc = dups.size;
+    fileStats.textContent =
+        `${filesData.length} file${filesData.length !== 1 ? 's' : ''} loaded` +
+        (dc ? ` · ⚠ ${dc} duplicate${dc !== 1 ? 's' : ''}` : '');
+    fileStats.classList.toggle('has-error', dc > 0);
+    downloadBtn.disabled = dc > 0;
+}
+
+// Called on every keystroke — refreshes stats & highlights without full re-render
+function updateStats() {
+    if (!filesData.length) return;
+    const dups = getDuplicates();
+    updateStatsBadge(dups);
+    const inputs = previewEl.querySelectorAll('.name-input');
+    inputs.forEach((inp, i) => {
+        if (i < filesData.length) {
+            inp.classList.toggle('is-duplicate', dups.has(getFullName(filesData[i]).toLowerCase()));
+        }
+    });
+}
+
+/* =============================================================
+ * 4. EXCEL EXPORT / IMPORT
+ * =========================================================== */
+function exportToExcel() {
+    if (!filesData.length) return showToast('No files loaded', 'error');
+
+    const data = filesData.map(f => ({
+        "Original_Filename": f.oldName,
+        "New_Filename":      ""
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    ws['!cols'] = [{wch: 44}, {wch: 44}];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "ImageList");
+    XLSX.writeFile(wb, "ImageList.xlsx");
+    showToast('Excel exported successfully', 'success');
+}
+
+function importFromExcel(input) {
+    const file = input.files[0];
+    if (!file) return;
+    showLoading(true, 'Reading Excel…');
+    const reader = new FileReader();
+
+    reader.onload = e => {
+        try {
+            const wb   = XLSX.read(e.target.result, {type: 'array'});
+            const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+
+            // Build lookup: originalFilename (lower) → index
+            const byOriginal = new Map(
+                filesData.map((item, i) => [item.oldName.toLowerCase(), i])
+            );
+
+            let count = 0;
+            rows.forEach((row, i) => {
+                const newFull = String(row['New_Filename'] || row['Filename'] || '').trim();
+                if (!newFull) return;
+
+                const origKey = String(row['Original_Filename'] || '').trim().toLowerCase();
+                // Match by original filename; fall back to row position
+                let idx = origKey ? (byOriginal.get(origKey) ?? -1) : -1;
+                if (idx === -1 && i < filesData.length) idx = i;
+
+                if (idx !== -1) {
+                    const item = filesData[idx];
+                    let base = newFull;
+                    // Strip extension if user accidentally included it
+                    if (item.extension && newFull.toLowerCase().endsWith(item.extension.toLowerCase())) {
+                        base = newFull.slice(0, -item.extension.length);
+                    }
+                    if (base.trim()) { item.baseName = base.trim(); count++; }
+                }
+            });
+
+            renderGrid();
+            showToast(`Updated ${count} filename${count !== 1 ? 's' : ''}`, 'success');
+        } catch (_) {
+            showToast('Error reading Excel file', 'error');
+        } finally {
+            showLoading(false);
+            input.value = '';
+        }
+    };
+
+    reader.readAsArrayBuffer(file);
+}
+
+/* =============================================================
+ * 6. ZIP DOWNLOAD
+ * =========================================================== */
+async function downloadZip() {
+    if (!filesData.length) return;
+    if (getDuplicates().size) return showToast('Fix duplicate filenames before downloading.', 'error');
+
+    showLoading(true, 'Compressing…');
+    try {
+        const zip    = new JSZip();
+        const folder = zip.folder('Renamed_Images');
+
+        await Promise.all(filesData.map(item =>
+            new Promise((resolve, reject) => {
+                const r = new FileReader();
+                r.onload  = ev => { folder.file(getFullName(item), ev.target.result); resolve(); };
+                r.onerror = reject;
+                r.readAsArrayBuffer(item.file);
+            })
+        ));
+
+        const blob = await zip.generateAsync({type: 'blob'}, meta => {
+            loadingText.textContent = `Compressing… ${meta.percent.toFixed(0)}%`;
+        });
+
+        const a = document.createElement('a');
+        a.href     = URL.createObjectURL(blob);
+        a.download = 'Renamed_Images.zip';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+        showToast('Download started!', 'success');
+    } catch (err) {
+        console.error(err);
+        showToast('Error creating ZIP', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+/* =============================================================
+ * 7. THEME  (persisted via localStorage)
+ * =========================================================== */
+function applyTheme(dark) {
+    document.body.classList.toggle('dark-mode', dark);
+    document.getElementById('themeIcon').className  = `fa-solid fa-${dark ? 'sun' : 'moon'}`;
+    document.getElementById('themeLabel').textContent = dark ? 'Light Mode' : 'Dark Mode';
+}
+
+function toggleTheme() {
+    const dark = !document.body.classList.contains('dark-mode');
+    localStorage.setItem('theme', dark ? 'dark' : 'light');
+    applyTheme(dark);
+}
+
+applyTheme(localStorage.getItem('theme') === 'dark');
+
+/* =============================================================
+ * 8. UTILITIES
+ * =========================================================== */
+function showToast(msg, type = 'info') {
+    const el   = document.createElement('div');
+    el.className = 'toast' + (type === 'error' ? ' toast-error' : '');
+    const icon = document.createElement('i');
+    icon.className = `fa-solid ${type === 'success' ? 'fa-check' : 'fa-circle-exclamation'}`;
+    const txt  = document.createElement('span');
+    txt.textContent = msg;
+    el.appendChild(icon);
+    el.appendChild(txt);
+    document.getElementById('toast-container').appendChild(el);
+    setTimeout(() => el.remove(), 3200);
+}
+
+function showLoading(show, text = 'Processing…') {
+    loadingOverlay.classList.toggle('active', show);
+    loadingText.textContent = text;
+}
+
+/* =============================================================
+ * 9. USER MANUAL STEPPER
+ * =========================================================== */
+let currentStep  = 0;
+const TOTAL_STEPS = 4;
+
+function goToStep(n) {
+    // Panels
+    document.querySelectorAll('.step-panel').forEach((p, i) => p.classList.toggle('active', i === n));
+
+    // Step dots
+    document.querySelectorAll('.step-dot').forEach((d, i) => {
+        d.classList.toggle('active', i === n);
+        d.classList.toggle('done',   i < n);
+    });
+
+    // Connector fills
+    for (let i = 0; i < TOTAL_STEPS - 1; i++) {
+        const fill = document.getElementById('fill-' + i);
+        if (fill) fill.style.width = i < n ? '100%' : '0%';
+    }
+
+    // Nav dots
+    document.querySelectorAll('.nav-dot').forEach((d, i) => d.classList.toggle('active', i === n));
+
+    // Prev / Next buttons
+    document.getElementById('prevBtn').disabled = n === 0;
+    document.getElementById('nextBtn').disabled = n === TOTAL_STEPS - 1;
+
+    currentStep = n;
+}
+
+function nextStep() { if (currentStep < TOTAL_STEPS - 1) goToStep(currentStep + 1); }
+function prevStep() { if (currentStep > 0)               goToStep(currentStep - 1); }
+
+// Keyboard navigation (← →)
+document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight') nextStep();
+    if (e.key === 'ArrowLeft')  prevStep();
+});
+
+// Scroll-reveal: animate manual section when it enters the viewport
+const manualObs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.style.opacity = '1'; });
+}, { threshold: 0.1 });
+
+const manualEl = document.querySelector('.manual-section');
+manualEl.style.opacity = '0';
+manualEl.style.transition = 'opacity 0.6s ease';
+manualObs.observe(manualEl);
+
+// Render initial empty state
+renderGrid();
+</script>
+</body>
+</html>
