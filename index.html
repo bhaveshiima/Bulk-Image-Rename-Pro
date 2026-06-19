@@ -790,7 +790,7 @@
                 <button class="btn-primary" onclick="exportToExcel()">
                     <i class="fa-solid fa-file-excel"></i> Export List
                 </button>
-                <button onclick="document.getElementById('excelImport').click()">
+                <button id="importBtn" onclick="document.getElementById('excelImport').click()" disabled>
                     <i class="fa-solid fa-file-import"></i> Import List
                 </button>
                 <input type="file" id="excelImport" accept=".xlsx,.xls" onchange="importFromExcel(this)">
@@ -895,7 +895,7 @@
             </div>
             <div class="step-info">
                 <h3>Step 4 &mdash; Download ZIP</h3>
-                <p>After importing, click the <strong>Download ZIP</strong> button in the top-right of the preview panel. All your images will be packaged into a single file called <code>Renamed_Images.zip</code> and downloaded to your device. Extract the ZIP and all photos will have their new names. Enjoy! 🎉</p>
+                <p>After importing, click the <strong>Download ZIP</strong> button in the top-right of the preview panel. All your images will be packaged into a single file called <code>PatronPhotos.zip</code> and downloaded to your device. Extract the ZIP and all photos will have their new names. Enjoy! 🎉</p>
                 <div class="step-tip">
                     <i class="fa-solid fa-lightbulb"></i>
                     <span>The original file format is always preserved &mdash; a <code>.jpg</code> stays a <code>.jpg</code> regardless of the new name you give it.</span>
@@ -928,9 +928,9 @@
 
     <footer>
         <div class="footer-line"></div>
-        <p><strong>An Initiative by Vikram Sarabhai Library, IIM Ahmedabad</strong></p>
-        <p>Designed and developed by <strong>Sunit</strong>, Library Trainee (Batch : 2025-26)</p>
-        <p>Mentored by <strong>Bhavesh Patel</strong>, Sr Library Professional&nbsp;&ndash;&nbsp;IT Applications.</p>
+        <p><strong>An Initiative by <a href="https://library.iima.ac.in" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">Vikram Sarabhai Library, IIM Ahmedabad</a></strong></p>
+        <p>Designed and developed by <strong>Sunit Kumar</strong>, Library Trainee (Batch : 2025-26)</p>
+        <p>Mentored by <strong><a href="https://in.linkedin.com/in/bhaveshiima" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">Bhavesh Patel</a></strong>, Sr Library Professional&nbsp;&ndash;&nbsp;IT Applications.</p>
     </footer>
 
 </div>
@@ -1042,10 +1042,13 @@ function renderGrid() {
         empty.appendChild(msg);
         previewEl.appendChild(empty);
         downloadBtn.disabled = true;
+        document.getElementById('importBtn').disabled = true;
         fileStats.textContent = '0 files loaded';
         fileStats.classList.remove('has-error');
         return;
     }
+
+    document.getElementById('importBtn').disabled = false;
 
     const dups = getDuplicates();
     updateStatsBadge(dups);
@@ -1159,6 +1162,7 @@ function exportToExcel() {
 }
 
 function importFromExcel(input) {
+    if (!filesData.length) return showToast('No files loaded — upload images first.', 'error');
     const file = input.files[0];
     if (!file) return;
     showLoading(true, 'Reading Excel…');
@@ -1212,13 +1216,13 @@ function importFromExcel(input) {
  * 6. ZIP DOWNLOAD
  * =========================================================== */
 async function downloadZip() {
-    if (!filesData.length) return;
+    if (!filesData.length) return showToast('No files loaded — upload images first.', 'error');
     if (getDuplicates().size) return showToast('Fix duplicate filenames before downloading.', 'error');
 
     showLoading(true, 'Compressing…');
     try {
         const zip    = new JSZip();
-        const folder = zip.folder('Renamed_Images');
+        const folder = zip.folder('PatronPhotos');
 
         await Promise.all(filesData.map(item =>
             new Promise((resolve, reject) => {
@@ -1229,13 +1233,17 @@ async function downloadZip() {
             })
         ));
 
+        // Add index text file listing: baseName , fullFilename
+        const txtLines = filesData.map(item => `${item.baseName} , ${getFullName(item)}`);
+        folder.file('DATALINK.txt', txtLines.join('\n'));
+
         const blob = await zip.generateAsync({type: 'blob'}, meta => {
             loadingText.textContent = `Compressing… ${meta.percent.toFixed(0)}%`;
         });
 
         const a = document.createElement('a');
         a.href     = URL.createObjectURL(blob);
-        a.download = 'Renamed_Images.zip';
+        a.download = 'PatronPhotos.zip';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
